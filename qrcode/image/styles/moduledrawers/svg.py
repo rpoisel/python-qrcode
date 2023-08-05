@@ -1,5 +1,6 @@
 import abc
 from decimal import Decimal
+from math import sin, cos
 from typing import TYPE_CHECKING, NamedTuple
 
 from qrcode.image.styles.moduledrawers.base import QRModuleDrawer
@@ -139,3 +140,37 @@ class SvgPathCircleDrawer(SvgPathQRModuleDrawer):
         # x,y is the point the arc is drawn to
 
         return f"M{x0},{yh}A{h},{h} 0 0 0 {x1},{yh}A{h},{h} 0 0 0 {x0},{yh}z"
+
+
+class SvgPathHexDrawer(SvgPathQRModuleDrawer):
+
+    def __init__(self, size_ratio=Decimal(1), start_angle=0):
+        super().__init__(size_ratio=size_ratio)
+        self.start_angle = start_angle
+
+    def subpath(self, box) -> str:
+        coords = self.coords(box)
+        x0 = self.img.units(coords.x0, text=False)
+        y0 = self.img.units(coords.y0, text=False)
+        x1 = self.img.units(coords.x1, text=False)
+        y1 = self.img.units(coords.y1, text=False)
+
+        width = x1 - x0
+        height = y1 - y0
+
+        center_x, center_y = x0 + width / 2, y0 + height / 2
+
+        side_length = min(width, height) / 2
+
+        path = ""
+        for i in range(6):
+            angle_grad = 60 * i + 30 + self.start_angle
+            angle_rad = angle_grad * (3.14159 / 180)
+            x = round(center_x + side_length * Decimal(cos(angle_rad)), 2)
+            y = round(center_y + side_length * Decimal(sin(angle_rad)), 2)
+            instruction = "M" if i == 0 else "L"
+            path += f"{instruction}{x},{y} "
+
+        path += "Z"
+
+        return path
